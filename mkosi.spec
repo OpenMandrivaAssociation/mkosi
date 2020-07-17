@@ -1,10 +1,12 @@
 Summary:	Create legacy-free OS images
 Name:		mkosi
 Version:	5
-Release:	1
+Release:	2
 License:	LGPLv2+
 URL:		https://github.com/systemd/mkosi
 Source0:	https://github.com/systemd/mkosi/archive/v%{version}/%{name}-%{version}.tar.gz
+# (tpg) sent upstream https://github.com/systemd/mkosi/pull/454
+Patch0:		mkosi-5-addopenmandriva-support.patch
 BuildArch:	noarch
 ExclusiveArch:	%{x86_64}
 BuildRequires:	python >= 3.0

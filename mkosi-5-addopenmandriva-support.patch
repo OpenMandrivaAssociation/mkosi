@@ -1,0 +1,298 @@
+diff -Naur mkosi-5/mkosi mkosi-5.tpg/mkosi
+--- mkosi-5/mkosi	2019-04-30 15:25:31.000000000 +0000
++++ mkosi-5.tpg/mkosi	2020-07-17 22:27:38.696612065 +0000
+@@ -162,6 +162,7 @@
+     mageia = 6
+     centos = 7
+     clear = 8
++    openmandriva = 9
+ 
+ 
+ GPT_ROOT_X86           = uuid.UUID("44479540f29741b29af7d131d5f0458a")  # NOQA: E221
+@@ -1013,7 +1014,7 @@
+ 
+     # We can't do this in mount_image() yet, as /var itself might have to be created as a subvolume first
+     with complete_step('Mounting Package Cache'):
+-        if args.distribution in (Distribution.fedora, Distribution.mageia):
++        if args.distribution in (Distribution.fedora, Distribution.mageia, Distribution.openmandriva):
+             mount_bind(args.cache_path, os.path.join(workspace, "root", "var/cache/dnf"))
+         elif args.distribution == Distribution.centos:
+             # We mount both the YUM and the DNF cache in this case, as
+@@ -1509,6 +1510,63 @@
+ 
+     reenable_kernel_install(args, workspace, masked)
+ 
++@completestep('Installing OpenMandriva')
++def install_openmandriva(args: CommandLineArguments, workspace: str, do_run_build_script: bool) -> None::
++    release = args.release.strip("'")
++    masked = disable_kernel_install(args, workspace)
++
++    # OpenMandriva does not (yet) have RPM GPG key on the web
++    gpg_key = '/etc/pki/rpm-gpg/RPM-GPG-KEY-OpenMandriva'
++    if os.path.exists(gpg_key):
++        gpg_key = f'file://{gpg_key}'
++#    else:
++#        gpg_key = "https://getfedora.org/static/{}.txt".format(FEDORA_KEYS_MAP[args.releasever])
++
++    if release[0].isdigit():
++        release_model = "rock"
++    elif release == "cooker":
++        release_model = "cooker"
++    else:
++        release_model = release
++
++    if args.mirror:
++        baseurl = f"{args.mirror}/{release_model}/repository/x86_64/main"
++        release_url = f"baseurl={baseurl}/release/"
++        updates_url = f"baseurl={baseurl}/updates/"
++    else:
++        baseurl = f"http://mirrors.openmandriva.org/mirrors.php?platform={release_model}&arch=x86_64&repo=main"
++        release_url = f"mirrorlist={baseurl}&release=release"
++        updates_url = f"mirrorlist={baseurl}&release=updates"
++
++    config_file = os.path.join(workspace, "dnf.conf")
++    with open(config_file, "w") as f:
++        f.write(f"""\
++[main]
++gpgcheck=1
++
++[openmandriva]
++name=OpenMandriva {release_model} Main
++{release_url}
++gpgkey={gpg_key}
++
++[updates]
++name=OpenMandriva {release_model} Main Updates
++{updates_url}
++gpgkey={gpg_key}
++""")
++
++    packages = ["basesystem-minimal", "systemd"] # well we may use basesystem here, but that pulls lot of stuff
++    packages += args.packages or []
++    if args.bootable:
++        packages += ["kernel-release-server", "binutils", "systemd-boot", "dracut", "timezone", "systemd-cryptsetup"]
++    if do_run_build_script:
++        packages += args.build_packages or []
++    invoke_dnf(args, workspace,
++               args.repositories if args.repositories else ["openmandriva", "updates"],
++               packages,
++               config_file)
++
++    reenable_kernel_install(args, workspace, masked)
+ 
+ def invoke_yum(args: CommandLineArguments,
+                workspace: str,
+@@ -1982,6 +2040,7 @@
+         Distribution.arch: install_arch,
+         Distribution.opensuse: install_opensuse,
+         Distribution.clear: install_clear,
++        Distribution.openmandriva: install_openmandriva
+     }
+ 
+     install[args.distribution](args, workspace, do_run_build_script)
+@@ -2192,6 +2251,8 @@
+ 
+     run_workspace_command(args, workspace, "/usr/bin/clr-boot-manager", "update", "-i", nspawn_params=nspawn_params)
+ 
++def install_boot_loader_openmandriva(args: CommandLineArguments, root: str, loopdev: str) -> None:
++    install_grub(args, root, loopdev, "grub2")
+ 
+ def install_boot_loader(args: CommandLineArguments, workspace: str, loopdev: Optional[str], cached: bool) -> None:
+     if not args.bootable:
+@@ -2227,6 +2288,8 @@
+         if args.distribution == Distribution.clear:
+             install_boot_loader_clear(args, workspace, loopdev)
+ 
++        if args.distribution == Distribution.openmandriva:
++            install_boot_loader_openmandriva(args, root, loopdev)
+ 
+ def install_extra_trees(args: CommandLineArguments, workspace: str, for_cache: bool) -> None:
+     if not args.extra_trees:
+@@ -2369,8 +2432,13 @@
+ 
+     with complete_step('Creating archive'):
+         f: BinaryIO = cast(BinaryIO, tempfile.NamedTemporaryFile(dir=os.path.dirname(args.output), prefix=".mkosi-"))
+-        run(["tar", "-C", os.path.join(workspace, "root"),
+-             "-c", "-J", "--xattrs", "--xattrs-include=*", "."],
++# some distributions defaults to bsdtar(libarchive) which uses POSIX argument list so let's keep a separate list
++        if shutil.which('bsdtar') is not False:
++           _tar_cmd = ["bsdtar", "-cf", "-", "-J", "-C", os.path.join(workspace, "root"), "."]
++        else:
++           _tar_cmd = ["tar", "-C", os.path.join(workspace, "root"), "-c", "-J", "--xattrs", "--xattrs-include=*", "."]
++
++        run([*_tar_cmd],
+             stdout=f, check=True)
+ 
+     return f
+@@ -3734,6 +3802,8 @@
+             args.release = "tumbleweed"
+         elif args.distribution == Distribution.clear:
+             args.release = "latest"
++        elif args.release == Distribution.openmandriva:
++            args.release = "cooker"
+ 
+     find_cache(args)
+ 
+diff -Naur mkosi-5/mkosi.files/mkosi.openmandriva mkosi-5.tpg/mkosi.files/mkosi.openmandriva
+--- mkosi-5/mkosi.files/mkosi.openmandriva	1970-01-01 00:00:00.000000000 +0000
++++ mkosi-5.tpg/mkosi.files/mkosi.openmandriva	2020-07-17 19:51:28.918917627 +0000
+@@ -0,0 +1,24 @@
++# SPDX-License-Identifier: LGPL-2.1+
++# Let's build an image that is just good enough to build new mkosi images again
++
++[Distribution]
++Distribution=openmandriva
++Release=cooker
++
++[Output]
++Format=gpt_ext4
++Bootable=yes
++Output=openmandriva.raw
++
++[Packages]
++Packages=
++        basesystem
++        btrfs-progs
++        dnf
++        dosfstools
++        git-core
++        gnupg
++        squashfs-tools
++        bsdtar
++        systemd
++        systemd-cryptysetup
+diff -Naur mkosi-5/mkosi.py mkosi-5.tpg/mkosi.py
+--- mkosi-5/mkosi.py	2019-04-30 15:25:31.000000000 +0000
++++ mkosi-5.tpg/mkosi.py	2020-07-17 22:27:38.696612065 +0000
+@@ -162,6 +162,7 @@
+     mageia = 6
+     centos = 7
+     clear = 8
++    openmandriva = 9
+ 
+ 
+ GPT_ROOT_X86           = uuid.UUID("44479540f29741b29af7d131d5f0458a")  # NOQA: E221
+@@ -1013,7 +1014,7 @@
+ 
+     # We can't do this in mount_image() yet, as /var itself might have to be created as a subvolume first
+     with complete_step('Mounting Package Cache'):
+-        if args.distribution in (Distribution.fedora, Distribution.mageia):
++        if args.distribution in (Distribution.fedora, Distribution.mageia, Distribution.openmandriva):
+             mount_bind(args.cache_path, os.path.join(workspace, "root", "var/cache/dnf"))
+         elif args.distribution == Distribution.centos:
+             # We mount both the YUM and the DNF cache in this case, as
+@@ -1509,6 +1510,63 @@
+ 
+     reenable_kernel_install(args, workspace, masked)
+ 
++@completestep('Installing OpenMandriva')
++def install_openmandriva(args: CommandLineArguments, workspace: str, do_run_build_script: bool) -> None::
++    release = args.release.strip("'")
++    masked = disable_kernel_install(args, workspace)
++
++    # OpenMandriva does not (yet) have RPM GPG key on the web
++    gpg_key = '/etc/pki/rpm-gpg/RPM-GPG-KEY-OpenMandriva'
++    if os.path.exists(gpg_key):
++        gpg_key = f'file://{gpg_key}'
++#    else:
++#        gpg_key = "https://getfedora.org/static/{}.txt".format(FEDORA_KEYS_MAP[args.releasever])
++
++    if release[0].isdigit():
++        release_model = "rock"
++    elif release == "cooker":
++        release_model = "cooker"
++    else:
++        release_model = release
++
++    if args.mirror:
++        baseurl = f"{args.mirror}/{release_model}/repository/x86_64/main"
++        release_url = f"baseurl={baseurl}/release/"
++        updates_url = f"baseurl={baseurl}/updates/"
++    else:
++        baseurl = f"http://mirrors.openmandriva.org/mirrors.php?platform={release_model}&arch=x86_64&repo=main"
++        release_url = f"mirrorlist={baseurl}&release=release"
++        updates_url = f"mirrorlist={baseurl}&release=updates"
++
++    config_file = os.path.join(workspace, "dnf.conf")
++    with open(config_file, "w") as f:
++        f.write(f"""\
++[main]
++gpgcheck=1
++
++[openmandriva]
++name=OpenMandriva {release_model} Main
++{release_url}
++gpgkey={gpg_key}
++
++[updates]
++name=OpenMandriva {release_model} Main Updates
++{updates_url}
++gpgkey={gpg_key}
++""")
++
++    packages = ["basesystem-minimal", "systemd"] # well we may use basesystem here, but that pulls lot of stuff
++    packages += args.packages or []
++    if args.bootable:
++        packages += ["kernel-release-server", "binutils", "systemd-boot", "dracut", "timezone", "systemd-cryptsetup"]
++    if do_run_build_script:
++        packages += args.build_packages or []
++    invoke_dnf(args, workspace,
++               args.repositories if args.repositories else ["openmandriva", "updates"],
++               packages,
++               config_file)
++
++    reenable_kernel_install(args, workspace, masked)
+ 
+ def invoke_yum(args: CommandLineArguments,
+                workspace: str,
+@@ -1982,6 +2040,7 @@
+         Distribution.arch: install_arch,
+         Distribution.opensuse: install_opensuse,
+         Distribution.clear: install_clear,
++        Distribution.openmandriva: install_openmandriva
+     }
+ 
+     install[args.distribution](args, workspace, do_run_build_script)
+@@ -2192,6 +2251,8 @@
+ 
+     run_workspace_command(args, workspace, "/usr/bin/clr-boot-manager", "update", "-i", nspawn_params=nspawn_params)
+ 
++def install_boot_loader_openmandriva(args: CommandLineArguments, root: str, loopdev: str) -> None:
++    install_grub(args, root, loopdev, "grub2")
+ 
+ def install_boot_loader(args: CommandLineArguments, workspace: str, loopdev: Optional[str], cached: bool) -> None:
+     if not args.bootable:
+@@ -2227,6 +2288,8 @@
+         if args.distribution == Distribution.clear:
+             install_boot_loader_clear(args, workspace, loopdev)
+ 
++        if args.distribution == Distribution.openmandriva:
++            install_boot_loader_openmandriva(args, root, loopdev)
+ 
+ def install_extra_trees(args: CommandLineArguments, workspace: str, for_cache: bool) -> None:
+     if not args.extra_trees:
+@@ -2369,8 +2432,13 @@
+ 
+     with complete_step('Creating archive'):
+         f: BinaryIO = cast(BinaryIO, tempfile.NamedTemporaryFile(dir=os.path.dirname(args.output), prefix=".mkosi-"))
+-        run(["tar", "-C", os.path.join(workspace, "root"),
+-             "-c", "-J", "--xattrs", "--xattrs-include=*", "."],
++# some distributions defaults to bsdtar(libarchive) which uses POSIX argument list so let's keep a separate list
++        if shutil.which('bsdtar') is not False:
++           _tar_cmd = ["bsdtar", "-cf", "-", "-J", "-C", os.path.join(workspace, "root"), "."]
++        else:
++           _tar_cmd = ["tar", "-C", os.path.join(workspace, "root"), "-c", "-J", "--xattrs", "--xattrs-include=*", "."]
++
++        run([*_tar_cmd],
+             stdout=f, check=True)
+ 
+     return f
+@@ -3734,6 +3802,8 @@
+             args.release = "tumbleweed"
+         elif args.distribution == Distribution.clear:
+             args.release = "latest"
++        elif args.release == Distribution.openmandriva:
++            args.release = "cooker"
+ 
+     find_cache(args)
+ 
