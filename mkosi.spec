@@ -9,7 +9,7 @@ BuildArch:	noarch
 ExclusiveArch:	%{x86_64}
 BuildRequires:	python >= 3.0
 BuildRequires:  python3dist(setuptools)
-Requires:	systemd-containers
+Requires:	systemd-container
 Recommends:	dnf
 Recommends:	debootstrap
 #Recommends:	arch-install-scripts
