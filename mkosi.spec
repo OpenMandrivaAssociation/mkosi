@@ -1,7 +1,7 @@
 Summary:	Create legacy-free OS images
 Name:		mkosi
 Version:	9
-Release:	1
+Release:	2
 License:	LGPLv2+
 URL:		https://github.com/systemd/mkosi
 Source0:	https://github.com/systemd/mkosi/archive/v%{version}/%{name}-%{version}.tar.gz
@@ -9,6 +9,7 @@ BuildArch:	noarch
 ExclusiveArch:	%{x86_64}
 BuildRequires:	python >= 3.0
 BuildRequires:  python3dist(setuptools)
+Requires:	systemd-containers
 Recommends:	dnf
 Recommends:	debootstrap
 #Recommends:	arch-install-scripts
