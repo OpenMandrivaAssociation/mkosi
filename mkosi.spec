@@ -1,15 +1,15 @@
 Summary:	Create legacy-free OS images
 Name:		mkosi
-Version:	5
+Version:	9
 Release:	2
 License:	LGPLv2+
 URL:		https://github.com/systemd/mkosi
 Source0:	https://github.com/systemd/mkosi/archive/v%{version}/%{name}-%{version}.tar.gz
-# (tpg) sent upstream https://github.com/systemd/mkosi/pull/454
-Patch0:		mkosi-5-addopenmandriva-support.patch
 BuildArch:	noarch
 ExclusiveArch:	%{x86_64}
 BuildRequires:	python >= 3.0
+BuildRequires:  python3dist(setuptools)
+Requires:	systemd-container
 Recommends:	dnf
 Recommends:	debootstrap
 #Recommends:	arch-install-scripts
@@ -37,17 +37,19 @@ supported (not plain MBR/BIOS).
 %autosetup -p1
 
 %build
-# no build required
+%py3_build
 
 %install
-# It's just one file, and setup.py install would copy useless .egg-info
-install -Dpt %{buildroot}%{_bindir}/ mkosi
-
-%files
-%license LICENSE
-%doc README.md
-%_bindir/mkosi
+%py3_install
 
 %check
 # just a smoke test for syntax or import errors
 %{buildroot}%{_bindir}/mkosi --help
+
+%files
+%license LICENSE
+%doc README.md
+%{_bindir}/mkosi
+%{python3_sitelib}/mkosi
+%{python3_sitelib}/mkosi-%{version}-py*.egg-info/
+%{_mandir}/man1/mkosi.1*
