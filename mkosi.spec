@@ -1,7 +1,7 @@
 Summary:	Create legacy-free OS images
 Name:		mkosi
-Version:	9
-Release:	2
+Version:	13
+Release:	1
 License:	LGPLv2+
 URL:		https://github.com/systemd/mkosi
 Source0:	https://github.com/systemd/mkosi/archive/v%{version}/%{name}-%{version}.tar.gz
@@ -52,4 +52,4 @@ supported (not plain MBR/BIOS).
 %{_bindir}/mkosi
 %{python3_sitelib}/mkosi
 %{python3_sitelib}/mkosi-%{version}-py*.egg-info/
-%{_mandir}/man1/mkosi.1*
+%doc %{_mandir}/man1/mkosi.1*
