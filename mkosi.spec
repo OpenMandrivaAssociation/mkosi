@@ -1,27 +1,28 @@
 Summary:	Create legacy-free OS images
 Name:		mkosi
 Version:	13
-Release:	1
+Release:	2
 License:	LGPLv2+
 URL:		https://github.com/systemd/mkosi
 Source0:	https://github.com/systemd/mkosi/archive/v%{version}/%{name}-%{version}.tar.gz
 BuildArch:	noarch
-ExclusiveArch:	%{x86_64}
 BuildRequires:	python >= 3.0
-BuildRequires:  python3dist(setuptools)
+BuildRequires:	python3dist(setuptools)
 Requires:	systemd-container
 Recommends:	dnf
-Recommends:	debootstrap
-#Recommends:	arch-install-scripts
-#Recommends:	edk2-ovmf
 Recommends:	gnupg
 Recommends:	xz
 Recommends:	tar
+Recommends:	cpio
+Recommends:	zstd
 Recommends:	btrfs-progs
 Recommends:	dosfstools
 Recommends:	e2fsprogs
 Recommends:	squashfs-tools
 Recommends:	cryptsetup
+Recommends:	python3dist(argcomplete)
+Recommends:	python3dist(cryptography)
+Recommends:	python3dist(pexpect)
 
 %description
 A fancy wrapper around "dnf --installroot", "debootstrap" and
