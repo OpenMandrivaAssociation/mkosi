@@ -1,13 +1,14 @@
 Summary:	Create legacy-free OS images
 Name:		mkosi
 Version:	13
-Release:	2
+Release:	3
 License:	LGPLv2+
 URL:		https://github.com/systemd/mkosi
 Source0:	https://github.com/systemd/mkosi/archive/v%{version}/%{name}-%{version}.tar.gz
 BuildArch:	noarch
 BuildRequires:	python >= 3.0
 BuildRequires:	python3dist(setuptools)
+Requires:	python3dist(xattr)
 Requires:	systemd-container
 Recommends:	dnf
 Recommends:	gnupg
