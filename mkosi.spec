@@ -1,7 +1,7 @@
 Summary:	Create legacy-free OS images
 Name:		mkosi
-Version:	14
-Release:	2
+Version:	18
+Release:	1
 License:	LGPLv2+
 URL:		https://github.com/systemd/mkosi
 Source0:	https://github.com/systemd/mkosi/archive/v%{version}/%{name}-%{version}.tar.gz
@@ -9,9 +9,10 @@ BuildArch:	noarch
 BuildRequires:	python >= 3.0
 BuildRequires:	python3dist(setuptools)
 BuildRequires:	python3dist(pip)
+BuildRequires:	python3dist(pytest)
 Requires:	python3dist(xattr)
 Requires:	systemd-container
-Recommends:	dnf
+Recommends:	(dnf5 or dnf)
 Recommends:	gnupg
 Recommends:	xz
 Recommends:	tar
@@ -19,12 +20,20 @@ Recommends:	cpio
 Recommends:	zstd
 Recommends:	btrfs-progs
 Recommends:	dosfstools
+Recommends:	mtools
 Recommends:	e2fsprogs
 Recommends:	squashfs-tools
 Recommends:	cryptsetup
 Recommends:	python3dist(argcomplete)
 Recommends:	python3dist(cryptography)
 Recommends:	python3dist(pexpect)
+Recommends:	openssh-clients
+Recommends:	socat
+Recommends:	openssl
+Recommends:	sbsigntools
+Recommends:	systemd-repart >= 254
+Recommends:	acl
+Recommends:	kmod
 
 %description
 A fancy wrapper around "dnf --installroot", "debootstrap" and
@@ -46,8 +55,10 @@ supported (not plain MBR/BIOS).
 %py3_install
 
 %check
+pytest tests/ -v
+
 # just a smoke test for syntax or import errors
-%{buildroot}%{_bindir}/mkosi --help
+PYTHONPATH="%{buildroot}%{python3_sitearch}:%{buildroot}%{python3_sitelib}" %{buildroot}%{_bindir}/mkosi --help >/dev/null
 
 %files
 %license LICENSE
@@ -55,4 +66,3 @@ supported (not plain MBR/BIOS).
 %{_bindir}/mkosi
 %{python3_sitelib}/mkosi
 %{python3_sitelib}/mkosi-%{version}.dist-info
-%doc %{_mandir}/man1/mkosi.1*
