@@ -1,6 +1,6 @@
 Summary:	Create legacy-free OS images
 Name:		mkosi
-Version:	18
+Version:	19
 Release:	1
 License:	LGPLv2+
 URL:		https://github.com/systemd/mkosi
