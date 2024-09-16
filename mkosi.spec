@@ -1,6 +1,6 @@
 Summary:	Create legacy-free OS images
 Name:		mkosi
-Version:	20.2
+Version:	24.3
 Release:	1
 License:	LGPLv2+
 URL:		https://github.com/systemd/mkosi
@@ -64,5 +64,6 @@ PYTHONPATH="%{buildroot}%{python3_sitearch}:%{buildroot}%{python3_sitelib}" %{bu
 %license LICENSE
 %doc README.md
 %{_bindir}/mkosi
+%{_bindir}/mkosi-initrd
 %{python3_sitelib}/mkosi
 %{python3_sitelib}/mkosi-%{version}.dist-info
