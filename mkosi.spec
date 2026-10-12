@@ -1,8 +1,9 @@
 Summary:	Create legacy-free OS images
 Name:		mkosi
 Version:	26
-Release:	1
+Release:	2
 License:	LGPLv2+
+Group:	Development/Other
 URL:		https://github.com/systemd/mkosi
 Source0:	https://github.com/systemd/mkosi/archive/v%{version}/%{name}-%{version}.tar.gz
 BuildArch:	noarch
