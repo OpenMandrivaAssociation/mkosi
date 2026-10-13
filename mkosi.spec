@@ -65,6 +65,8 @@ PYTHONPATH="%{buildroot}%{python3_sitearch}:%{buildroot}%{python3_sitelib}" %{bu
 %license LICENSES/LGPL-2.1-or-later.txt LICENSES/GPL-2.0-only.txt LICENSES/OFL-1.1.txt LICENSES/PSF-2.0.txt
 %doc README.md
 %{_bindir}/mkosi
+%{_bindir}/mkosi-addon
 %{_bindir}/mkosi-initrd
+%{_bindir}/mkosi-sandbox
 %{python3_sitelib}/mkosi
 %{python3_sitelib}/mkosi-%{version}.dist-info
