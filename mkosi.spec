@@ -62,7 +62,7 @@ pytest tests/ -v
 PYTHONPATH="%{buildroot}%{python3_sitearch}:%{buildroot}%{python3_sitelib}" %{buildroot}%{_bindir}/mkosi --help >/dev/null
 
 %files
-%license LICENSE
+%license LICENSES/LGPL-2.1-or-later.txt LICENSES/GPL-2.0-only.txt LICENSES/OFL-1.1.txt LICENSES/PSF-2.0.txt
 %doc README.md
 %{_bindir}/mkosi
 %{_bindir}/mkosi-initrd
